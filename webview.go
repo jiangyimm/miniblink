@@ -85,7 +85,6 @@ func NewWebView(isTransparent bool, bounds ...int) *WebView {
 			close(v.Destroy)
 		}
 		v.IsDestroy = true
-		os.Exit(0)
 	})
 	view.On("documentReady", func(v *WebView) {
 		select {
