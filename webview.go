@@ -5,7 +5,6 @@ import "C"
 import (
 	"github.com/del-xiong/miniblink/eventemitter"
 	"github.com/lxn/win"
-	"os"
 	"reflect"
 	"unsafe"
 )
