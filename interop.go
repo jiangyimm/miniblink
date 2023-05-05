@@ -362,3 +362,40 @@ func (view *WebView) Invoke(path string, args ...interface{}) (returnValue jsoni
 		return nil, errors.New(resultJson.Get("Message").ToString())
 	}
 }
+
+//执行js方法
+func (view *WebView) Eval(js string) (returnValue jsoniter.Any, err error) {
+	if view.IsDestroy {
+		return nil, errors.New("WebView已经被销毁")
+	}
+
+	//所有的调用必须等待文档ready,且没有webview没有destroy
+	select {
+	case <-view.DocumentReady:
+		break
+	case <-view.Destroy:
+		//view已经destroy
+		return nil, errors.New("WebView已经被销毁")
+	}
+
+	defer func() {
+		//处理未捕获的异常
+		if e := recover(); e != nil {
+			returnValue = nil
+			err = errors.New(fmt.Sprint(e))
+		}
+	}()
+
+	done := make(chan string)
+	jobQueue <- func() {
+		result := C.runJSProxy(view.window, C.CString(js))
+		done <- C.GoString(result)
+	}
+	resultJson := jsoniter.Get([]byte(<-done))
+
+	if resultJson.Get("Success").ToBool() {
+		return jsoniter.Get([]byte(resultJson.Get("ReturnValue").ToString())), nil
+	} else {
+		return nil, errors.New(resultJson.Get("Message").ToString())
+	}
+}
